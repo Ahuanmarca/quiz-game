@@ -12,6 +12,11 @@
   user-select: none;
 }
 
+.options:hover {
+  /* color: rgb(0, 151, 98); */
+  text-decoration: underline;
+}
+
 .incorrect-answer-color {
   color: var(--incorrect-answer-color);
 }
@@ -19,7 +24,6 @@
 .correct-answer-color {
   color: var(--correct-answer-color);
 }
-
 
 /* PROGRESS BAR */
 .progress-bar {
@@ -30,7 +34,8 @@
 .progress-box {
   width: 20px;
   height: 20px;
-  border: 1px dotted gray;
+  border-radius: 3px;
+  border: 1px dotted rgb(206, 206, 206);
 }
 
 .incorrect-answer-box {
