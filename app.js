@@ -78,20 +78,34 @@ const getQuestion = (function () {
       `https://quiz-api-ofkh.onrender.com/questions/random?level=${level}&category=${category}`
     );
     const data = await response.json();
-    console.log(data);
 
     if (usedQuestions.findIndex((e) => e === data._id) !== -1) {
       console.log("Repeated question found, fetching again.");
       return await getQuestion(gameState);
     } else {
-      console.log(data.description);
-      Object.entries(data.answers).forEach((a) => console.log(a.join(": ")));
+      // Object.entries(data.answers).forEach((a) => console.log(a.join(": ")));
       usedQuestions.push(data._id);
       console.log("Used questions:", usedQuestions);
+      data.shuffleAnswers = shuffleAnswers;
+      data.shuffleAnswers();
       return data;
     }
   }
   return getQuestion;
 })();
+
+function shuffleAnswers() {
+  const answerArr = Object.entries(this.answers);
+  answerArr.sort(() => 0.5 - Math.random());
+  const newCorrectAnswer = { 0: "a", 1: "b", 2: "c", 3: "d" }[
+    answerArr.findIndex((q) => q[0] === this.correctAnswer)
+  ];
+  Object.keys(this.answers).forEach((char, index) => {
+    answerArr[index][0] = char;
+  });
+  const answerObj = Object.fromEntries(answerArr);
+  this.answers = answerObj;
+  this.correctAnswer = newCorrectAnswer;
+}
 
 runGame();
