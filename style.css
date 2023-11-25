@@ -3,13 +3,47 @@
   --correct-answer-color: rgb(12, 197, 12);
 }
 
+.super-container {
+  height: 100vh;
+  padding-top: 6rem;
+
+  display: flex;
+  justify-content: center;
+  /* align-items: center; */
+}
+
 .game-container {
+  width: 570px;
   font-family: 'Courier New', Courier, monospace;
 }
 
+.option-letter {
+  border: 1px solid black;
+  padding: 0 5px;
+  border-radius: 5px;
+}
+
+.question-text {
+  font-size: 1.5rem;
+}
+
+.options-container {
+  padding-left: 2rem;
+  /* padding-right: 2rem; */
+  margin-bottom: 1rem;
+}
+
 .options {
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  border: 1px solid gray;
+  font-size: 1.2rem;
   cursor: pointer;
   user-select: none;
+
+  display: flex;
+  gap: 10px;
 }
 
 .options:hover {
@@ -44,4 +78,8 @@
 
 .correct-answer-box {
   background-color: var(--correct-answer-color);
+}
+
+.pending-answer-box {
+  background-color: rgb(255, 255, 135);
 }

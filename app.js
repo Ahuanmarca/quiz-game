@@ -22,10 +22,13 @@ function resetQuestion(question, gameState) {
     const optionButton = document.querySelector(`.option-${char}`);
     optionButton.classList.remove("correct-answer-color");
     optionButton.classList.remove("incorrect-answer-color");
+    const progressBox = document.querySelector(
+      `.progress-box-${gameState.round}`
+    );
+    progressBox.classList.add("pending-answer-box");
+
     optionButton.addEventListener("click", () => {
-      const progressBox = document.querySelector(
-        `.progress-box-${gameState.round}`
-      );
+      progressBox.classList.remove("pending-answer-box");
 
       if (correctAnswer === char) {
         optionButton.classList.toggle("correct-answer-color");
@@ -76,9 +79,9 @@ const getQuestion = (function () {
     );
     const data = await response.json();
     console.log(data);
-    
+
     if (usedQuestions.findIndex((e) => e === data._id) !== -1) {
-      console.log("Repeated question found, fetching again.")
+      console.log("Repeated question found, fetching again.");
       return await getQuestion(gameState);
     } else {
       console.log(data.description);
