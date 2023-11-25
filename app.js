@@ -14,6 +14,9 @@ function resetQuestion(question, gameState) {
 
   const correctAnswer = question.correctAnswer;
 
+  const feedbackText = document.querySelector(".feedback-text");
+  feedbackText.innerText = "";
+
   // Options
   Array.from("abcd").forEach((char) => {
     const optionText = document.querySelector(`.option-text-${char}`);
@@ -42,6 +45,16 @@ function resetQuestion(question, gameState) {
         progressBox.classList.add("incorrect-answer-box");
       }
 
+      let delay;
+
+      if (question.feedback) {
+        const feedbackText = document.querySelector(".feedback-text");
+        feedbackText.innerText = question.feedback;
+        delay = 6000;
+      } else {
+        delay = 3000;
+      }
+
       setTimeout(async () => {
         Array.from("abcd").forEach((char) => {
           // SNIPPET TO REMOVE ALL EVENT LISTENERS FROM A NODE
@@ -53,7 +66,7 @@ function resetQuestion(question, gameState) {
         gameState.round++;
         const question = await getQuestion(gameState);
         resetQuestion(question, gameState);
-      }, 3000);
+      }, delay);
     });
   });
 }
