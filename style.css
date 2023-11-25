@@ -1,0 +1,42 @@
+:root {
+  --incorrect-answer-color: rgb(255, 65, 65);
+  --correct-answer-color: rgb(12, 197, 12);
+}
+
+.game-container {
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.options {
+  cursor: pointer;
+  user-select: none;
+}
+
+.incorrect-answer-color {
+  color: var(--incorrect-answer-color);
+}
+
+.correct-answer-color {
+  color: var(--correct-answer-color);
+}
+
+
+/* PROGRESS BAR */
+.progress-bar {
+  display: flex;
+  gap: 5px;
+}
+
+.progress-box {
+  width: 20px;
+  height: 20px;
+  border: 1px dotted gray;
+}
+
+.incorrect-answer-box {
+  background-color: var(--incorrect-answer-color);
+}
+
+.correct-answer-box {
+  background-color: var(--correct-answer-color);
+}
