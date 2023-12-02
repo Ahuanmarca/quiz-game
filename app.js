@@ -1,6 +1,12 @@
 async function runGame() {
   const gameState = {
     round: 1,
+    // usedWildCards: {
+    // eliminateHalf: false,
+    // callFriend: false,
+    // changeQuestion: false,
+    // },
+    active: true,
   };
 
   const question = await getQuestion(gameState);
@@ -16,6 +22,78 @@ function resetQuestion(question, gameState) {
 
   const feedbackText = document.querySelector(".feedback-text");
   feedbackText.innerText = "";
+
+  // WILD CARD BUTTONS
+  const wildCardClasses = [
+    ".eliminate-half",
+    ".call-friend",
+    ".change-question",
+  ];
+
+  // * Remove event listeners from wild card buttons
+  wildCardClasses.forEach((buttonClass) => {
+    const old_element = document.querySelector(buttonClass);
+    const new_element = old_element.cloneNode(true);
+    old_element.parentNode.replaceChild(new_element, old_element);
+  });
+
+  // WILD CARD 1: ELIMINATE 2 WRONG ANSWERS FROM THE OPTIONS
+  const eliminateHalfButton = document.querySelector(".eliminate-half");
+  eliminateHalfButton.addEventListener(
+    "click",
+    () => {
+      const answersCopy = { ...question.answers };
+      // delete the correct answer from this object
+      delete answersCopy[correctAnswer];
+      // delete another random answer from the object
+      delete answersCopy[
+        Object.keys(answersCopy)[Math.floor(Math.random() * 3)]
+      ];
+      const eliminatingOptions = Object.keys(answersCopy);
+      eliminatingOptions.forEach((optionLetter) => {
+        console.log("This option will be red: ", optionLetter);
+        const eliminatingOption = document.querySelector(
+          `.option-${optionLetter}`
+        );
+        eliminatingOption.classList.add("incorrect-answer-color");
+      });
+      eliminateHalfButton.disabled = true;
+    },
+    { once: true }
+  );
+
+  // WILD CARD 2: CALL A FRIEND TO GET A HINT
+  const callFriendButton = document.querySelector(".call-friend");
+  callFriendButton.addEventListener(
+    "click",
+    () => {
+      callFriendButton.disabled = true;
+      alert("CALL FRIEND!");
+    },
+    { once: true }
+  );
+
+  // WILD CARD 3: CHANGE QUESTION WITHOUT INCREASEING THE ROUND
+  const changeQuestionButton = document.querySelector(".change-question");
+  changeQuestionButton.addEventListener(
+    "click",
+    () => {
+      changeQuestionButton.disabled = true;
+      setTimeout(async () => {
+        // REMOVE ALL EVENT LISTENERS FROM THE OPTION BUTTONS
+        // Snippet: https://stackoverflow.com/questions/9251837/how-to-remove-all-listeners-in-an-element
+        Array.from("abcd").forEach((char) => {
+          const old_element = document.querySelector(`.option-${char}`);
+          const new_element = old_element.cloneNode(true);
+          old_element.parentNode.replaceChild(new_element, old_element);
+        });
+
+        const question = await getQuestion(gameState);
+        resetQuestion(question, gameState);
+      }, 1000);
+    },
+    { once: true }
+  );
 
   // Options
   Array.from("abcd").forEach((char) => {
