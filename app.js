@@ -40,7 +40,7 @@ function resetQuestion(question, gameState) {
   const currentQuestionState = {
     usedEliminateHalf: false,
     eliminatedOptions: [],
-  }
+  };
 
   // WILD CARD 1: ELIMINATE 2 WRONG ANSWERS FROM THE OPTIONS
   const eliminateHalfButton = document.querySelector(".eliminate-half");
@@ -78,16 +78,21 @@ function resetQuestion(question, gameState) {
     "click",
     () => {
       callFriendButton.disabled = true;
+      let beCorrect;
       if (currentQuestionState.usedEliminateHalf) {
-        alert("USED ELIMINATE HALF")
+        beCorrect = Math.random() > 0.1;
       } else {
-        const beCorrect = Math.random() > 0.3;
-        if (beCorrect) {
-          alert(`Correct answer is ${correctAnswer} 🍎`);
-        } else {
-          const badAnswers = ['a', 'b', 'c', 'd'].filter(n => n !== correctAnswer);
-          alert(`Correct answer is ${badAnswers[Math.floor(Math.random() * 3)]} 💀`);
-        }
+        beCorrect = Math.random() > 0.3;
+      }
+      if (beCorrect) {
+        const hintText = document.querySelector(".feedback-text");
+        hintText.innerText = `The answer is letter ${correctAnswer}!`;
+      } else {
+        const badAnswer = ["a", "b", "c", "d"].filter(
+          (n) => n !== correctAnswer
+        )[Math.floor(Math.random() * 3)];
+        const hintText = document.querySelector(".feedback-text");
+        hintText.innerText = `The answer is letter ${badAnswer}! 👻`;
       }
     },
     { once: true }
