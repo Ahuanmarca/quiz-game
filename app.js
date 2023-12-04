@@ -37,6 +37,11 @@ function resetQuestion(question, gameState) {
     old_element.parentNode.replaceChild(new_element, old_element);
   });
 
+  const currentQuestionState = {
+    usedEliminateHalf: false,
+    eliminatedOptions: [],
+  }
+
   // WILD CARD 1: ELIMINATE 2 WRONG ANSWERS FROM THE OPTIONS
   const eliminateHalfButton = document.querySelector(".eliminate-half");
   eliminateHalfButton.addEventListener(
@@ -50,6 +55,11 @@ function resetQuestion(question, gameState) {
         Object.keys(answersCopy)[Math.floor(Math.random() * 3)]
       ];
       const eliminatingOptions = Object.keys(answersCopy);
+
+      // * Remember wildcard usage and eliminated options
+      currentQuestionState.usedEliminateHalf = true;
+      currentQuestionState.eliminatedOptions.push(...eliminatingOptions);
+
       eliminatingOptions.forEach((optionLetter) => {
         console.log("This option will be red: ", optionLetter);
         const eliminatingOption = document.querySelector(
@@ -68,7 +78,17 @@ function resetQuestion(question, gameState) {
     "click",
     () => {
       callFriendButton.disabled = true;
-      alert("CALL FRIEND!");
+      if (currentQuestionState.usedEliminateHalf) {
+        alert("USED ELIMINATE HALF")
+      } else {
+        const beCorrect = Math.random() > 0.3;
+        if (beCorrect) {
+          alert(`Correct answer is ${correctAnswer} 🍎`);
+        } else {
+          const badAnswers = ['a', 'b', 'c', 'd'].filter(n => n !== correctAnswer);
+          alert(`Correct answer is ${badAnswers[Math.floor(Math.random() * 3)]} 💀`);
+        }
+      }
     },
     { once: true }
   );
