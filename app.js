@@ -1,28 +1,101 @@
 async function runGame() {
   const gameState = {
     round: 1,
-    // usedWildCards: {
-    // eliminateHalf: false,
-    // callFriend: false,
-    // changeQuestion: false,
-    // },
     active: true,
   };
 
   const question = await getQuestion(gameState);
-  resetQuestion(question, gameState);
+  advanceRound(question, gameState);
 }
 
-function resetQuestion(question, gameState) {
-  // Question
-  const questionText = document.querySelector(".question-text");
-  questionText.innerText = question.description;
+function advanceRound(question, gameState) {
+  // Remove Event Listeners from Option Buttons
+  // Snippet: https://stackoverflow.com/questions/9251837/how-to-remove-all-listeners-in-an-element
+  Object.keys(question.answers).forEach((char) => {
+    const old_element = document.querySelector(`.option-${char}`);
+    const new_element = old_element.cloneNode(true);
+    old_element.parentNode.replaceChild(new_element, old_element);
+  });
+  displayOnPage(".question-text", question.description);
+  displayOnPage(".feedback-text", "");
+  resetWildcards(question, question.correctAnswer, gameState);
+  resetOptions(question, question.correctAnswer, gameState);
+}
 
-  const correctAnswer = question.correctAnswer;
+function displayOnPage(selector, content) {
+  if (!selector || content === undefined) {
+    alert("missing arguments on displayOnPage()");
+  }
+  const selectedNode = document.querySelector(selector);
+  selectedNode.innerText = content;
+}
 
-  const feedbackText = document.querySelector(".feedback-text");
-  feedbackText.innerText = "";
+function resetOptions(question, correctAnswer, gameState) {
+  // ["a", "b", "c", "d"] <= answers keys
+  Object.keys(question.answers).forEach((char) => {
+    displayOnPage(`.option-text-${char}`, question.answers[char]);
 
+    const optionButton = document.querySelector(`.option-${char}`);
+    optionButton.classList.remove("correct-answer-color");
+    optionButton.classList.remove("incorrect-answer-color");
+    const progressBox = document.querySelector(
+      `.progress-box-${gameState.round}`
+    );
+    progressBox.classList.add("pending-answer-box");
+
+    optionButton.addEventListener("click", () => {
+      handleAnswer(
+        progressBox,
+        correctAnswer,
+        optionButton,
+        char,
+        question,
+        gameState
+      );
+    });
+  });
+}
+
+function handleAnswer(
+  progressBox,
+  correctAnswer,
+  optionButton,
+  char,
+  question,
+  gameState
+) {
+  if (correctAnswer === char) {
+    // Set correct text to green
+    optionButton.classList.add("correct-answer-color");
+    progressBox.classList.remove("pending-answer-box");
+    progressBox.classList.add("correct-answer-box");
+  } else {
+    // Set incorrect text to red and correct to green
+    optionButton.classList.add("incorrect-answer-color");
+    document
+      .querySelector(`.option-${correctAnswer}`)
+      .classList.add("correct-answer-color");
+    progressBox.classList.remove("pending-answer-box");
+    progressBox.classList.add("incorrect-answer-box");
+  }
+
+  if (question.feedback) {
+    displayOnPage(".feedback-text", question.feedback);
+  }
+
+  // * After handling the answer, we need to advance the turn.
+  // * I don't know if there's other option but having this here:
+  setTimeout(
+    async () => {
+      gameState.round++;
+      const question = await getQuestion(gameState);
+      advanceRound(question, gameState);
+    },
+    question.feedback ? 6000 : 3000
+  );
+}
+
+function resetWildcards(question, correctAnswer, gameState) {
   // WILD CARD BUTTONS
   const wildCardClasses = [
     ".eliminate-half",
@@ -105,73 +178,12 @@ function resetQuestion(question, gameState) {
     () => {
       changeQuestionButton.disabled = true;
       setTimeout(async () => {
-        // REMOVE ALL EVENT LISTENERS FROM THE OPTION BUTTONS
-        // Snippet: https://stackoverflow.com/questions/9251837/how-to-remove-all-listeners-in-an-element
-        Array.from("abcd").forEach((char) => {
-          const old_element = document.querySelector(`.option-${char}`);
-          const new_element = old_element.cloneNode(true);
-          old_element.parentNode.replaceChild(new_element, old_element);
-        });
-
         const question = await getQuestion(gameState);
-        resetQuestion(question, gameState);
+        advanceRound(question, gameState);
       }, 1000);
     },
     { once: true }
   );
-
-  // Options
-  Array.from("abcd").forEach((char) => {
-    const optionText = document.querySelector(`.option-text-${char}`);
-    optionText.innerText = question.answers[char];
-
-    const optionButton = document.querySelector(`.option-${char}`);
-    optionButton.classList.remove("correct-answer-color");
-    optionButton.classList.remove("incorrect-answer-color");
-    const progressBox = document.querySelector(
-      `.progress-box-${gameState.round}`
-    );
-    progressBox.classList.add("pending-answer-box");
-
-    optionButton.addEventListener("click", () => {
-      progressBox.classList.remove("pending-answer-box");
-
-      if (correctAnswer === char) {
-        optionButton.classList.toggle("correct-answer-color");
-        progressBox.classList.add("correct-answer-box");
-      } else {
-        optionButton.classList.toggle("incorrect-answer-color");
-        const correctAnswerButton = document.querySelector(
-          `.option-${correctAnswer}`
-        );
-        correctAnswerButton.classList.toggle("correct-answer-color");
-        progressBox.classList.add("incorrect-answer-box");
-      }
-
-      let delay;
-
-      if (question.feedback) {
-        const feedbackText = document.querySelector(".feedback-text");
-        feedbackText.innerText = question.feedback;
-        delay = 6000;
-      } else {
-        delay = 3000;
-      }
-
-      setTimeout(async () => {
-        Array.from("abcd").forEach((char) => {
-          // SNIPPET TO REMOVE ALL EVENT LISTENERS FROM A NODE
-          // https://stackoverflow.com/questions/9251837/how-to-remove-all-listeners-in-an-element
-          const old_element = document.querySelector(`.option-${char}`);
-          const new_element = old_element.cloneNode(true);
-          old_element.parentNode.replaceChild(new_element, old_element);
-        });
-        gameState.round++;
-        const question = await getQuestion(gameState);
-        resetQuestion(question, gameState);
-      }, delay);
-    });
-  });
 }
 
 const getQuestion = (function () {
