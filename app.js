@@ -1,25 +1,128 @@
-async function runGame() {
-  const gameState = {
-    round: 1,
-    active: true,
+async function run(debug = false) {
+  const game = {
+    _round: 0,
+    _active: true,
+    _delay: 3000,
+    // currentQuestion: [],
+    _categories: {
+      HTML: "html",
+      CSS: "css",
+      JavaScript: "javascript",
+    },
+
+    _levels: {
+      easy: "easy",
+      medium: "medium",
+      hard: "hard",
+      obscure: "obscure",
+    },
+
+    get round() {
+      return this._round;
+    },
+
+    set round(value) {
+      this._round = value;
+    },
+
+    get delay() {
+      if (debug) return 100;
+      return this._delay;
+    },
+
+    increaseRound() {
+      this.round++;
+    },
+
+    decreaseRound() {
+      this.round--;
+    },
+
+    getRandomCategory() {
+      if (debug) return this._categories.JavaScript;
+      const categoryArr = Object.values(this._categories);
+      return categoryArr[Math.floor(Math.random() * categoryArr.length)];
+    },
+
+    get level() {
+      if (debug) return this._levels.easy;
+      if (this.round <= 5) {
+        return this._levels.easy;
+      } else if (this.round <= 10) {
+        return this._levels.medium;
+      } else {
+        return this._levels.hard;
+      }
+    },
+
+    selectors: {
+      optionButtons: ".options",
+      questionText: ".question-text",
+      feedbackText: ".feedback-text",
+      callFriendButton: ".call-friend",
+      eliminateHalfButton: ".eliminate-half",
+      changeQuestionButton: ".change-question",
+    },
+
+    _nodes: {
+      get optionButtons() {
+        return document.querySelectorAll(".options");
+      },
+      getOptionButton(currentOption) {
+        return document.querySelector(`.option-${currentOption}`);
+      },
+      get questionText() {
+        return document.querySelector(".question-text");
+      },
+      get feedbackText() {
+        return document.querySelector(".feedback-text");
+      },
+      get callFriendBtn() {
+        return document.querySelector(".call-friend");
+      },
+      get eliminateHalfBtn() {
+        return document.querySelector(".eliminate-half");
+      },
+      get changeQuestionBtn() {
+        return document.querySelector(".change-question");
+      },
+    },
+
+    get nodes() {
+      return this._nodes;
+    },
+
+    get progressBox() {
+      return document.querySelector(`.progress-box-${this.round}`);
+    },
   };
 
-  const question = await getQuestion(gameState);
-  advanceRound(question, gameState);
+  await advanceRound(game);
 }
 
-function advanceRound(question, gameState) {
+async function advanceRound(game) {
+  game.increaseRound();
+  const question = await getQuestion(game);
+  question.shuffleAnswers();
+
   // Remove Event Listeners from Option Buttons
   // Snippet: https://stackoverflow.com/questions/9251837/how-to-remove-all-listeners-in-an-element
-  Object.keys(question.answers).forEach((char) => {
-    const old_element = document.querySelector(`.option-${char}`);
-    const new_element = old_element.cloneNode(true);
-    old_element.parentNode.replaceChild(new_element, old_element);
+  game.nodes.optionButtons.forEach((optionNode) => {
+    const oldElement = optionNode;
+    const newElement = oldElement.cloneNode(true);
+    oldElement.parentNode.replaceChild(newElement, oldElement);
   });
-  displayOnPage(".question-text", question.description);
-  displayOnPage(".feedback-text", "");
-  resetWildcards(question, question.correctAnswer, gameState);
-  resetOptions(question, question.correctAnswer, gameState);
+
+  game.nodes.questionText.innerText = question.description;
+  game.nodes.feedbackText.innerText = "";
+
+  resetWildcards(question, game); // ! ⬅ REFACTORRRR 💀👻👀
+
+  game.progressBox.classList.add("pending-answer-box"); // TODO HARDCODE
+
+  Object.keys(question.answers).forEach((currentOption) => {
+    resetOption(question, game, currentOption);
+  });
 }
 
 function displayOnPage(selector, content) {
@@ -30,72 +133,51 @@ function displayOnPage(selector, content) {
   selectedNode.innerText = content;
 }
 
-function resetOptions(question, correctAnswer, gameState) {
-  // ["a", "b", "c", "d"] <= answers keys
-  Object.keys(question.answers).forEach((char) => {
-    displayOnPage(`.option-text-${char}`, question.answers[char]);
-
-    const optionButton = document.querySelector(`.option-${char}`);
-    optionButton.classList.remove("correct-answer-color");
-    optionButton.classList.remove("incorrect-answer-color");
-    const progressBox = document.querySelector(
-      `.progress-box-${gameState.round}`
-    );
-    progressBox.classList.add("pending-answer-box");
-
-    optionButton.addEventListener("click", () => {
-      handleAnswer(
-        progressBox,
-        correctAnswer,
-        optionButton,
-        char,
-        question,
-        gameState
-      );
-    });
+function resetOption(question, game, currentOption) {
+  displayOnPage(
+    `.option-text-${currentOption}`,
+    question.answers[currentOption]
+  );
+  const optionButton = game.nodes.getOptionButton(currentOption);
+  optionButton.classList.remove("correct-answer-color");
+  optionButton.classList.remove("incorrect-answer-color");
+  optionButton.addEventListener("click", () => {
+    handleAnswer(question, game, currentOption);
   });
 }
 
-function handleAnswer(
-  progressBox,
-  correctAnswer,
-  optionButton,
-  char,
-  question,
-  gameState
-) {
-  if (correctAnswer === char) {
-    // Set correct text to green
-    optionButton.classList.add("correct-answer-color");
-    progressBox.classList.remove("pending-answer-box");
-    progressBox.classList.add("correct-answer-box");
-  } else {
-    // Set incorrect text to red and correct to green
-    optionButton.classList.add("incorrect-answer-color");
-    document
-      .querySelector(`.option-${correctAnswer}`)
+function handleAnswer(question, game, currentOption) {
+  if (question.correctAnswer === currentOption) {
+    game.nodes
+      .getOptionButton(question.correctAnswer)
       .classList.add("correct-answer-color");
-    progressBox.classList.remove("pending-answer-box");
-    progressBox.classList.add("incorrect-answer-box");
+    game.progressBox.classList.remove("pending-answer-box");
+    game.progressBox.classList.add("correct-answer-box");
+  } else {
+    game.nodes
+      .getOptionButton(currentOption)
+      .classList.add("incorrect-answer-color");
+    game.nodes
+      .getOptionButton(question.correctAnswer)
+      .classList.add("correct-answer-color");
+    game.progressBox.classList.remove("pending-answer-box");
+    game.progressBox.classList.add("incorrect-answer-box");
   }
 
   if (question.feedback) {
-    displayOnPage(".feedback-text", question.feedback);
+    game.nodes.feedbackText.innerText = question.feedback;
   }
 
   // * After handling the answer, we need to advance the turn.
-  // * I don't know if there's other option but having this here:
   setTimeout(
     async () => {
-      gameState.round++;
-      const question = await getQuestion(gameState);
-      advanceRound(question, gameState);
+      await advanceRound(game);
     },
-    question.feedback ? 6000 : 3000
+    question.feedback ? game.delay * 2 : game.delay
   );
 }
 
-function resetWildcards(question, correctAnswer, gameState) {
+function resetWildcards(question, game) {
   // WILD CARD BUTTONS
   const wildCardClasses = [
     ".eliminate-half",
@@ -115,71 +197,65 @@ function resetWildcards(question, correctAnswer, gameState) {
     eliminatedOptions: [],
   };
 
-  // WILD CARD 1: ELIMINATE 2 WRONG ANSWERS FROM THE OPTIONS
-  const eliminateHalfButton = document.querySelector(".eliminate-half");
-  eliminateHalfButton.addEventListener(
+  // WILDCARD 1: ELIMINATE 2 WRONG ANSWERS
+  game.nodes.eliminateHalfBtn.addEventListener(
+    // eliminateHalfButton.addEventListener(
     "click",
-    () => {
+    (e) => {
+      e.target.disabled = true;
       const answersCopy = { ...question.answers };
-      // delete the correct answer from this object
-      delete answersCopy[correctAnswer];
-      // delete another random answer from the object
+      delete answersCopy[question.correctAnswer];
       delete answersCopy[
-        Object.keys(answersCopy)[Math.floor(Math.random() * 3)]
+        Object.keys(answersCopy)[
+          Math.floor(Math.random() * Object.keys(answersCopy).length)
+        ]
       ];
       const eliminatingOptions = Object.keys(answersCopy);
 
-      // * Remember wildcard usage and eliminated options
+      // Remember wildcard use and eliminated options,
+      // in case WILDCARD 2 is fired this round
       currentQuestionState.usedEliminateHalf = true;
       currentQuestionState.eliminatedOptions.push(...eliminatingOptions);
 
       eliminatingOptions.forEach((optionLetter) => {
-        console.log("This option will be red: ", optionLetter);
-        const eliminatingOption = document.querySelector(
-          `.option-${optionLetter}`
-        );
-        eliminatingOption.classList.add("incorrect-answer-color");
+        game.nodes
+          .getOptionButton(optionLetter)
+          .classList.add("incorrect-answer-color");
       });
-      eliminateHalfButton.disabled = true;
     },
     { once: true }
   );
 
-  // WILD CARD 2: CALL A FRIEND TO GET A HINT
-  const callFriendButton = document.querySelector(".call-friend");
-  callFriendButton.addEventListener(
+  // WILDCARD 2: CALL A FRIEND
+  game.nodes.callFriendBtn.addEventListener(
     "click",
-    () => {
-      callFriendButton.disabled = true;
-      let beCorrect;
-      if (currentQuestionState.usedEliminateHalf) {
-        beCorrect = Math.random() > 0.1;
+    (e) => {
+      e.target.disabled = true;
+      const friendIsCorrect =
+        Math.random() > (currentQuestionState.usedEliminateHalf ? 0.1 : 0.3);
+
+      if (friendIsCorrect) {
+        game.nodes.feedbackText.innerText = `The answer is letter ${question.correctAnswer}!`;
       } else {
-        beCorrect = Math.random() > 0.3;
-      }
-      if (beCorrect) {
-        const hintText = document.querySelector(".feedback-text");
-        hintText.innerText = `The answer is letter ${correctAnswer}!`;
-      } else {
-        const badAnswer = ["a", "b", "c", "d"].filter(
-          (n) => n !== correctAnswer
-        )[Math.floor(Math.random() * 3)];
-        const hintText = document.querySelector(".feedback-text");
-        hintText.innerText = `The answer is letter ${badAnswer}! 👻`;
+        const badAnswers = Object.keys(question.answers).filter(
+          (q) => q !== question.correctAnswer
+        );
+        const badAnswer =
+          badAnswers[Math.floor(Math.random) * badAnswers.length];
+        game.nodes.feedbackText.innerText = `The answer is letter ${badAnswer}! 👻`;
       }
     },
     { once: true }
   );
 
-  // WILD CARD 3: CHANGE QUESTION WITHOUT INCREASEING THE ROUND
-  const changeQuestionButton = document.querySelector(".change-question");
-  changeQuestionButton.addEventListener(
+  // WILDCARD 3: CHANGE QUESTION WITHOUT INCREASEING THE ROUND
+  game.nodes.changeQuestionBtn.addEventListener(
     "click",
-    () => {
-      changeQuestionButton.disabled = true;
+    (e) => {
+      e.target.disabled = true;
       setTimeout(async () => {
-        const question = await getQuestion(gameState);
-        advanceRound(question, gameState);
+        game.decreaseRound(); // Round "repeats" because of wildcard
+        await advanceRound(game);
       }, 1000);
     },
     { once: true }
@@ -189,51 +265,64 @@ function resetWildcards(question, correctAnswer, gameState) {
 const getQuestion = (function () {
   const usedQuestions = [];
 
-  async function getQuestion(gameState) {
-    let level;
-    if (gameState.round <= 5) {
-      level = "easy";
-    } else if (gameState.roung <= 10) {
-      level = "medium";
-    } else {
-      level = "hard";
-    }
-    const category = ["javascript", "css", "html"][
-      Math.floor(Math.random() * 3)
-    ];
-
-    const response = await fetch(
-      `https://quiz-api-ofkh.onrender.com/questions/random?level=${level}&category=${category}`
-    );
-    const data = await response.json();
-
-    if (usedQuestions.findIndex((e) => e === data._id) !== -1) {
-      console.log("Repeated question found, fetching again.");
-      return await getQuestion(gameState);
-    } else {
-      // Object.entries(data.answers).forEach((a) => console.log(a.join(": ")));
-      usedQuestions.push(data._id);
-      console.log("Used questions:", usedQuestions);
-      data.shuffleAnswers = shuffleAnswers;
-      data.shuffleAnswers();
-      return data;
+  async function getQuestion(game) {
+    const level = game.level;
+    const category = game.getRandomCategory();
+    try {
+      const response = await fetch(
+        `https://quiz-api-ofkh.onrender.com/questions/random?level=${level}&category=${category}`
+      );
+      const data = await response.json();
+      if (usedQuestions.includes(data._id)) {
+        console.warn("Repeated question, fetching again.");
+        return await getQuestion(game);
+      } else {
+        usedQuestions.push(data._id);
+        console.log("Used questions:", usedQuestions);
+        data.shuffleAnswers = shuffleAnswers;
+        return data;
+      }
+    } catch (TypeError) {
+      const mockData = {
+        _id: "764833b63g55044199542d84",
+        description: "¿Cuál es la capital del Perú?",
+        answers: {
+          a: "Iquitos",
+          b: "Lima",
+          c: "Cusco",
+          d: "Arequipa",
+        },
+        correctAnswer: "b",
+        feedback: "Esta pregunta es un placeholder cuando falla la red.",
+      };
+      mockData.shuffleAnswers = shuffleAnswers;
+      return mockData;
     }
   }
   return getQuestion;
 })();
 
 function shuffleAnswers() {
+  // Get an entries array from the answers [["a","foo"]["b","bar"]["c","baz"]]
   const answerArr = Object.entries(this.answers);
+  // Shuffle the entries array in place [["c","baz"],["a","foo"],["b","bar"]]
   answerArr.sort(() => 0.5 - Math.random());
-  const newCorrectAnswer = { 0: "a", 1: "b", 2: "c", 3: "d" }[
-    answerArr.findIndex((q) => q[0] === this.correctAnswer)
-  ];
-  Object.keys(this.answers).forEach((char, index) => {
-    answerArr[index][0] = char;
+
+  // How do we find the letter of the correct answer in the shuffled array?
+  // -> Use game.correctAnswer to find index in shuffled array
+  // index 0 -> letter 'a', index 1 -> letter 'b', etc
+  const letterOfCorrectAnswerInNewPosition = Object.keys(this.answers)[ // "abcd"
+    answerArr.findIndex((entry) => entry[0] === this.correctAnswer)
+  ]; // ! ⬅ DIFFICULT TO READ !! 😵‍💫
+
+  // Reassign the letters in the shuffled array [["c","baz"],["a","foo"],["b","bar"]]
+  // so they are in the correct order [["a","baz"],["b","foo"],["c","bar"]]
+  Object.keys(this.answers).forEach((currentOption, index) => {
+    answerArr[index][0] = currentOption;
   });
-  const answerObj = Object.fromEntries(answerArr);
-  this.answers = answerObj;
-  this.correctAnswer = newCorrectAnswer;
+
+  this.answers = Object.fromEntries(answerArr);
+  this.correctAnswer = letterOfCorrectAnswerInNewPosition;
 }
 
-runGame();
+run(true);
