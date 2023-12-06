@@ -21,6 +21,29 @@ async function run(debug = false) {
       return `https://quiz-api-ofkh.onrender.com/questions/random?level=${level}&category=${category}`;
     },
 
+    get isActive() {
+      return game._active;
+    },
+
+    pause() {
+      this._active = false;
+      game.removeEventListeners(game.nodes.optionButtons);
+      game.removeEventListeners(game.nodes.wildCardButtons);
+    },
+
+    unpause() {
+      this._active = true;
+    },
+
+    removeEventListeners(nodes) {
+      // Snippet: https://stackoverflow.com/questions/9251837/how-to-remove-all-listeners-in-an-element
+      nodes.forEach((optionNode) => {
+        const oldElement = optionNode;
+        const newElement = oldElement.cloneNode(true);
+        oldElement.parentNode.replaceChild(newElement, oldElement);
+      });
+    },
+
     get round() {
       return this._round;
     },
@@ -186,12 +209,22 @@ function handleAnswer(question, game, currentOption) {
   }
 
   // * After handling the answer, we need to advance the turn.
-  setTimeout(
-    async () => {
-      await advanceRound(game);
-    },
-    question.feedback ? game.delay * 2 : game.delay
-  );
+
+  game.pause();
+  if (game.round < 15) {
+    setTimeout(
+      async () => {
+        await advanceRound(game);
+        game.unpause();
+      },
+      question.feedback ? game.delay * 2 : game.delay
+    );
+  } else {
+    setTimeout(() => {
+      game.nodes.feedbackText.innerText = "GAME OVER";
+      game.nodes.feedbackText.classList.add(game.classes.incorrectAnswerColor);
+    }, game.delay);
+  }
 }
 
 function resetWildcards(question, game) {
@@ -331,4 +364,4 @@ function shuffleAnswers() {
   this.correctAnswer = letterOfCorrectAnswerInNewPosition;
 }
 
-run(true);
+run();
