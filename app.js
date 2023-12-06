@@ -3,7 +3,6 @@ async function run(debug = false) {
     _round: 0,
     _active: true,
     _delay: 3000,
-    // currentQuestion: [],
     _categories: {
       HTML: "html",
       CSS: "css",
@@ -25,6 +24,9 @@ async function run(debug = false) {
       return game._active;
     },
 
+    // Pauses the game by removing Event Listeners, should be called
+    // when there's no need to use the event anymore
+    // i.e. not before "e.target.disabled = true"
     pause() {
       this._active = false;
       game.removeEventListeners(game.nodes.optionButtons);
@@ -37,8 +39,8 @@ async function run(debug = false) {
 
     removeEventListeners(nodes) {
       // Snippet: https://stackoverflow.com/questions/9251837/how-to-remove-all-listeners-in-an-element
-      nodes.forEach((optionNode) => {
-        const oldElement = optionNode;
+      nodes.forEach((node) => {
+        const oldElement = node;
         const newElement = oldElement.cloneNode(true);
         oldElement.parentNode.replaceChild(newElement, oldElement);
       });
@@ -94,16 +96,6 @@ async function run(debug = false) {
       return this._classes;
     },
 
-    // ? HOW CAN I INSERT A METHOD IN A SELECTED NODE?
-    // _addClass: {
-    //   correctAnswerColor(e) {
-    //     e.target.classList.add(this.classes.correctAnswerColor);
-    //   }
-    // },
-    // get addClass() {
-    //   return this._addClass;
-    // },
-
     _nodes: {
       get optionButtons() {
         return document.querySelectorAll(".options");
@@ -151,14 +143,6 @@ async function advanceRound(game) {
   const question = await getQuestion(game);
   question.shuffleAnswers();
 
-  // Remove Event Listeners from Option Buttons
-  // Snippet: https://stackoverflow.com/questions/9251837/how-to-remove-all-listeners-in-an-element
-  game.nodes.optionButtons.forEach((optionNode) => {
-    const oldElement = optionNode;
-    const newElement = oldElement.cloneNode(true);
-    oldElement.parentNode.replaceChild(newElement, oldElement);
-  });
-
   game.nodes.questionText.innerText = question.description;
   game.nodes.feedbackText.innerText = "";
 
@@ -168,7 +152,7 @@ async function advanceRound(game) {
   game.nodes.progressBox.classList.add(game.classes.pendingAnswerBox);
 
   Object.keys(question.answers).forEach((currentOption) => {
-    // I would prefer to just iterate the buttons, but I need to pass the character (currentOption)
+    // I need to pass each character from question keys
     resetOption(question, game, currentOption);
   });
 }
@@ -189,7 +173,6 @@ function handleAnswer(question, game, currentOption) {
     game.nodes
       .getOptionButton(question.correctAnswer)
       .classList.add(game.classes.correctAnswerColor);
-    // .addClass.correctAnswerColor(); // TODO REFACTOR TO METHOD LIKE THIS 🍎
 
     game.nodes.progressBox.classList.remove(game.classes.pendingAnswerBox);
     game.nodes.progressBox.classList.add(game.classes.correctAnswerBox);
@@ -208,8 +191,7 @@ function handleAnswer(question, game, currentOption) {
     game.nodes.feedbackText.innerText = question.feedback;
   }
 
-  // * After handling the answer, we need to advance the turn.
-
+  // After handling the answer, we need to advance the turn.
   game.pause();
   if (game.round < 15) {
     setTimeout(
@@ -293,7 +275,9 @@ function resetWildcards(question, game) {
   game.nodes.changeQuestionBtn.addEventListener(
     "click",
     (e) => {
+      // game.pause() must be called after disabling the button
       e.target.disabled = true;
+      game.pause();
       setTimeout(async () => {
         game.decreaseRound(); // Round "repeats" because of wildcard
         await advanceRound(game);
@@ -332,7 +316,8 @@ const getQuestion = (function () {
           d: "Arequipa",
         },
         correctAnswer: "b",
-        feedback: "Esta pregunta es un placeholder cuando falla la red.",
+        feedback:
+          "Esta pregunta es un placeholder que se muestra cuando falla la red.",
       };
       mockData.shuffleAnswers = shuffleAnswers;
       return mockData;
