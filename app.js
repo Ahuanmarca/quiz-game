@@ -17,6 +17,10 @@ async function run(debug = false) {
       obscure: "obscure",
     },
 
+    buildApiUrl(level, category) {
+      return `https://quiz-api-ofkh.onrender.com/questions/random?level=${level}&category=${category}`;
+    },
+
     get round() {
       return this._round;
     },
@@ -55,14 +59,27 @@ async function run(debug = false) {
       }
     },
 
-    selectors: {
-      optionButtons: ".options",
-      questionText: ".question-text",
-      feedbackText: ".feedback-text",
-      callFriendButton: ".call-friend",
-      eliminateHalfButton: ".eliminate-half",
-      changeQuestionButton: ".change-question",
+    _classes: {
+      correctAnswerColor: "correct-answer-color",
+      incorrectAnswerColor: "incorrect-answer-color",
+      pendingAnswerBox: "pending-answer-box",
+      correctAnswerBox: "correct-answer-box",
+      incorrectAnswerBox: "incorrect-answer-box",
     },
+
+    get classes() {
+      return this._classes;
+    },
+
+    // ? HOW CAN I INSERT A METHOD IN A SELECTED NODE?
+    // _addClass: {
+    //   correctAnswerColor(e) {
+    //     e.target.classList.add(this.classes.correctAnswerColor);
+    //   }
+    // },
+    // get addClass() {
+    //   return this._addClass;
+    // },
 
     _nodes: {
       get optionButtons() {
@@ -71,11 +88,17 @@ async function run(debug = false) {
       getOptionButton(currentOption) {
         return document.querySelector(`.option-${currentOption}`);
       },
+      getOptionText(currentOption) {
+        return document.querySelector(`.option-text-${currentOption}`);
+      },
       get questionText() {
         return document.querySelector(".question-text");
       },
       get feedbackText() {
         return document.querySelector(".feedback-text");
+      },
+      get wildCardButtons() {
+        return document.querySelectorAll(".wildcard-button");
       },
       get callFriendBtn() {
         return document.querySelector(".call-friend");
@@ -86,14 +109,14 @@ async function run(debug = false) {
       get changeQuestionBtn() {
         return document.querySelector(".change-question");
       },
+      get progressBox() {
+        // Not using "this"... bad smell?
+        return document.querySelector(`.progress-box-${game.round}`);
+      },
     },
 
     get nodes() {
       return this._nodes;
-    },
-
-    get progressBox() {
-      return document.querySelector(`.progress-box-${this.round}`);
     },
   };
 
@@ -116,31 +139,23 @@ async function advanceRound(game) {
   game.nodes.questionText.innerText = question.description;
   game.nodes.feedbackText.innerText = "";
 
-  resetWildcards(question, game); // ! ⬅ REFACTORRRR 💀👻👀
+  // Each wildcard requires a different set of instructions
+  resetWildcards(question, game);
 
-  game.progressBox.classList.add("pending-answer-box"); // TODO HARDCODE
+  game.nodes.progressBox.classList.add(game.classes.pendingAnswerBox);
 
   Object.keys(question.answers).forEach((currentOption) => {
+    // I would prefer to just iterate the buttons, but I need to pass the character (currentOption)
     resetOption(question, game, currentOption);
   });
 }
 
-function displayOnPage(selector, content) {
-  if (!selector || content === undefined) {
-    alert("missing arguments on displayOnPage()");
-  }
-  const selectedNode = document.querySelector(selector);
-  selectedNode.innerText = content;
-}
-
 function resetOption(question, game, currentOption) {
-  displayOnPage(
-    `.option-text-${currentOption}`,
-    question.answers[currentOption]
-  );
+  game.nodes.getOptionText(currentOption).innerText =
+    question.answers[currentOption];
   const optionButton = game.nodes.getOptionButton(currentOption);
-  optionButton.classList.remove("correct-answer-color");
-  optionButton.classList.remove("incorrect-answer-color");
+  optionButton.classList.remove(game.classes.correctAnswerColor);
+  optionButton.classList.remove(game.classes.incorrectAnswerColor);
   optionButton.addEventListener("click", () => {
     handleAnswer(question, game, currentOption);
   });
@@ -150,18 +165,20 @@ function handleAnswer(question, game, currentOption) {
   if (question.correctAnswer === currentOption) {
     game.nodes
       .getOptionButton(question.correctAnswer)
-      .classList.add("correct-answer-color");
-    game.progressBox.classList.remove("pending-answer-box");
-    game.progressBox.classList.add("correct-answer-box");
+      .classList.add(game.classes.correctAnswerColor);
+    // .addClass.correctAnswerColor(); // TODO REFACTOR TO METHOD LIKE THIS 🍎
+
+    game.nodes.progressBox.classList.remove(game.classes.pendingAnswerBox);
+    game.nodes.progressBox.classList.add(game.classes.correctAnswerBox);
   } else {
     game.nodes
       .getOptionButton(currentOption)
-      .classList.add("incorrect-answer-color");
+      .classList.add(game.classes.incorrectAnswerColor);
     game.nodes
       .getOptionButton(question.correctAnswer)
-      .classList.add("correct-answer-color");
-    game.progressBox.classList.remove("pending-answer-box");
-    game.progressBox.classList.add("incorrect-answer-box");
+      .classList.add(game.classes.correctAnswerColor);
+    game.nodes.progressBox.classList.remove(game.classes.pendingAnswerBox);
+    game.nodes.progressBox.classList.add(game.classes.incorrectAnswerBox);
   }
 
   if (question.feedback) {
@@ -178,18 +195,10 @@ function handleAnswer(question, game, currentOption) {
 }
 
 function resetWildcards(question, game) {
-  // WILD CARD BUTTONS
-  const wildCardClasses = [
-    ".eliminate-half",
-    ".call-friend",
-    ".change-question",
-  ];
-
-  // * Remove event listeners from wild card buttons
-  wildCardClasses.forEach((buttonClass) => {
-    const old_element = document.querySelector(buttonClass);
-    const new_element = old_element.cloneNode(true);
-    old_element.parentNode.replaceChild(new_element, old_element);
+  game.nodes.wildCardButtons.forEach((wildCardButton) => {
+    const oldElement = wildCardButton;
+    const newElement = oldElement.cloneNode(true);
+    oldElement.parentNode.replaceChild(newElement, oldElement);
   });
 
   const currentQuestionState = {
@@ -197,9 +206,8 @@ function resetWildcards(question, game) {
     eliminatedOptions: [],
   };
 
-  // WILDCARD 1: ELIMINATE 2 WRONG ANSWERS
+  // WILDCARD 1: ELIMINATE TWO WRONG ANSWERS
   game.nodes.eliminateHalfBtn.addEventListener(
-    // eliminateHalfButton.addEventListener(
     "click",
     (e) => {
       e.target.disabled = true;
@@ -213,14 +221,14 @@ function resetWildcards(question, game) {
       const eliminatingOptions = Object.keys(answersCopy);
 
       // Remember wildcard use and eliminated options,
-      // in case WILDCARD 2 is fired this round
+      // in case WILDCARD 2 is fired this same round
       currentQuestionState.usedEliminateHalf = true;
       currentQuestionState.eliminatedOptions.push(...eliminatingOptions);
 
       eliminatingOptions.forEach((optionLetter) => {
         game.nodes
           .getOptionButton(optionLetter)
-          .classList.add("incorrect-answer-color");
+          .classList.add(game.classes.incorrectAnswerColor);
       });
     },
     { once: true }
@@ -269,9 +277,7 @@ const getQuestion = (function () {
     const level = game.level;
     const category = game.getRandomCategory();
     try {
-      const response = await fetch(
-        `https://quiz-api-ofkh.onrender.com/questions/random?level=${level}&category=${category}`
-      );
+      const response = await fetch(game.buildApiUrl(level, category));
       const data = await response.json();
       if (usedQuestions.includes(data._id)) {
         console.warn("Repeated question, fetching again.");
