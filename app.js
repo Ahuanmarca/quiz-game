@@ -297,7 +297,7 @@ const getQuestion = (function () {
       const response = await fetch(game.buildApiUrl(level, category));
       const data = await response.json();
       if (usedQuestions.includes(data._id)) {
-        console.warn("Repeated question, fetching again.");
+        console.warn("Repeated Question, Fetching Again.");
         return await getQuestion(game);
       } else {
         usedQuestions.push(data._id);
@@ -306,21 +306,24 @@ const getQuestion = (function () {
         return data;
       }
     } catch (TypeError) {
-      const mockData = {
-        _id: "764833b63g55044199542d84",
-        description: "¿Cuál es la capital del Perú?",
-        answers: {
-          a: "Iquitos",
-          b: "Lima",
-          c: "Cusco",
-          d: "Arequipa",
-        },
-        correctAnswer: "b",
-        feedback:
-          "Esta pregunta es un placeholder que se muestra cuando falla la red.",
-      };
-      mockData.shuffleAnswers = shuffleAnswers;
-      return mockData;
+      // TODO: WILL THIS WORK?
+      console.warn("Network Error, Fetching Again.");
+      return await getQuestion(game);
+      // const mockData = {
+      //   _id: "764833b63g55044199542d84",
+      //   description: "¿Cuál es la capital del Perú?",
+      //   answers: {
+      //     a: "Iquitos",
+      //     b: "Lima",
+      //     c: "Cusco",
+      //     d: "Arequipa",
+      //   },
+      //   correctAnswer: "b",
+      //   feedback:
+      //     "Esta pregunta es un placeholder que se muestra cuando falla la red.",
+      // };
+      // mockData.shuffleAnswers = shuffleAnswers;
+      // return mockData;
     }
   }
   return getQuestion;
@@ -349,4 +352,4 @@ function shuffleAnswers() {
   this.correctAnswer = letterOfCorrectAnswerInNewPosition;
 }
 
-run();
+run(true);
