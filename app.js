@@ -1,254 +1,11 @@
-(function buildPage() {
-  const superContainer = document.createElement("div");
-  superContainer.classList.add("super-container");
-  document.querySelector(".root").appendChild(superContainer);
-
-  // GAME CONTAINER
-  const gameContainer = document.createElement("div");
-  gameContainer.classList.add("game-container");
-  superContainer.appendChild(gameContainer);
-  // LEFT BOX
-  const leftBox = document.createElement("div");
-  leftBox.classList.add("left-box");
-  gameContainer.appendChild(leftBox);
-  // RIGHT BOX
-  const rightBox = document.createElement("div");
-  rightBox.classList.add("right-box");
-  gameContainer.appendChild(rightBox);
-
-  // LEFT BOX CONTENTS:
-  // - Question
-  // - Progress Bar
-  // - Wildcard Buttons
-  // - Feedback
-
-  // QUESTION
-  const questionContainer = document.createElement("div");
-  questionContainer.classList.add("question-container");
-  const questionText = document.createElement("p");
-  questionText.classList.add("question-text");
-  questionText.innerText = "¿Cuál es la capital de Perú?";
-  questionContainer.appendChild(questionText);
-  leftBox.appendChild(questionContainer);
-
-  // PROGRESS BAR
-  const progressBar = document.createElement("div");
-  progressBar.classList.add("progress-bar");
-  for (let i = 1; i <= 15; i++) {
-    const progressBox = document.createElement("div");
-    progressBox.classList.add("progress-box");
-    progressBox.classList.add(`progress-box-${i}`);
-    progressBar.appendChild(progressBox);
-  }
-  leftBox.appendChild(progressBar);
-
-  // WILDCARDS
-  const wildcardButtonsContainer = document.createElement("div");
-  wildcardButtonsContainer.classList.add("wildcard-buttons-container");
-  const eliminateHalfButton = document.createElement("button");
-  eliminateHalfButton.classList.add("wildcard-button");
-  eliminateHalfButton.classList.add("eliminate-half");
-  eliminateHalfButton.innerText = "Eliminar la mitad";
-  const callFriendButton = document.createElement("button");
-  callFriendButton.classList.add("wildcard-button");
-  callFriendButton.classList.add("call-friend");
-  callFriendButton.innerText = "Llamar a un amigo";
-  const changeQuestionButton = document.createElement("button");
-  changeQuestionButton.classList.add("wildcard-button");
-  changeQuestionButton.classList.add("change-question");
-  changeQuestionButton.innerText = "Cambiar pregunta";
-  wildcardButtonsContainer.appendChild(eliminateHalfButton);
-  wildcardButtonsContainer.appendChild(callFriendButton);
-  wildcardButtonsContainer.appendChild(changeQuestionButton);
-  leftBox.appendChild(wildcardButtonsContainer);
-
-  // FEEDBACK
-  const feedbackContainer = document.createElement("div");
-  feedbackContainer.classList.add("feedback-container");
-  const feedbackText = document.createElement("p");
-  feedbackText.classList.add("feedback-text");
-  feedbackContainer.appendChild(feedbackText);
-  leftBox.appendChild(feedbackContainer);
-
-  /*
-  RIGHT BOX CONTENTS:
-    - OPTIONS
-  
-    div.options-container
-        div.options option-a
-            div.option-letter-container
-                span.option-letter // <- this one is only for display
-            div.option-text-container
-                span.option-text-a
-  */
-
-  const optionsContainer = document.createElement("div");
-  optionsContainer.classList.add("options-container");
-
-  const optionLetters = ["a", "b", "c", "d"];
-  optionLetters.forEach((character) => {
-    const option = document.createElement("div");
-    option.classList.add("options");
-    option.classList.add(`option-${character}`);
-
-    const optionLetterContainer = document.createElement("div");
-    optionLetterContainer.classList.add("option-letter-container");
-    const optionLetter = document.createElement("span");
-    optionLetter.classList.add("option-letter");
-    optionLetter.innerText = character;
-
-    const optionTextContainer = document.createElement("div");
-    optionTextContainer.classList.add("option-text-container");
-    const optionText = document.createElement("span");
-    optionText.classList.add(`option-text-${character}`);
-
-    optionTextContainer.appendChild(optionText);
-    optionLetterContainer.appendChild(optionLetter);
-    option.appendChild(optionLetterContainer);
-    option.appendChild(optionTextContainer);
-    optionsContainer.appendChild(option);
-  });
-
-  rightBox.appendChild(optionsContainer);
-})();
+import { createGame } from "./src/createGame.js";
+import { buildPage } from "./src/buildPage.js";
 
 async function run(debug = false) {
-  const game = {
-    _round: 0,
-    _active: true,
-    _delay: 3000,
-    _categories: {
-      HTML: "html",
-      CSS: "css",
-      JavaScript: "javascript",
-    },
-
-    _levels: {
-      easy: "easy",
-      medium: "medium",
-      hard: "hard",
-      obscure: "obscure",
-    },
-
-    buildApiUrl(level, category) {
-      return `https://quiz-api-ofkh.onrender.com/questions/random?level=${level}&category=${category}`;
-    },
-
-    get isActive() {
-      return game._active;
-    },
-
-    // Pauses the game by removing Event Listeners, should be called
-    // when there's no need to use the event anymore
-    // i.e. not before "e.target.disabled = true"
-    pause() {
-      this._active = false;
-      game.removeEventListeners(game.nodes.optionButtons);
-      game.removeEventListeners(game.nodes.wildCardButtons);
-    },
-
-    unpause() {
-      this._active = true;
-    },
-
-    removeEventListeners(nodes) {
-      // Snippet: https://stackoverflow.com/questions/9251837/how-to-remove-all-listeners-in-an-element
-      nodes.forEach((node) => {
-        const oldElement = node;
-        const newElement = oldElement.cloneNode(true);
-        oldElement.parentNode.replaceChild(newElement, oldElement);
-      });
-    },
-
-    get round() {
-      return this._round;
-    },
-
-    set round(value) {
-      this._round = value;
-    },
-
-    get delay() {
-      if (debug) return 100;
-      return this._delay;
-    },
-
-    increaseRound() {
-      this.round++;
-    },
-
-    decreaseRound() {
-      this.round--;
-    },
-
-    getRandomCategory() {
-      if (debug) return this._categories.JavaScript;
-      const categoryArr = Object.values(this._categories);
-      return categoryArr[Math.floor(Math.random() * categoryArr.length)];
-    },
-
-    get level() {
-      if (debug) return this._levels.easy;
-      if (this.round <= 5) {
-        return this._levels.easy;
-      } else if (this.round <= 10) {
-        return this._levels.medium;
-      } else {
-        return this._levels.hard;
-      }
-    },
-
-    _classes: {
-      correctAnswerColor: "correct-answer-color",
-      incorrectAnswerColor: "incorrect-answer-color",
-      pendingAnswerBox: "pending-answer-box",
-      correctAnswerBox: "correct-answer-box",
-      incorrectAnswerBox: "incorrect-answer-box",
-    },
-
-    get classes() {
-      return this._classes;
-    },
-
-    _nodes: {
-      get optionButtons() {
-        return document.querySelectorAll(".options");
-      },
-      getOptionButton(currentOption) {
-        return document.querySelector(`.option-${currentOption}`);
-      },
-      getOptionText(currentOption) {
-        return document.querySelector(`.option-text-${currentOption}`);
-      },
-      get questionText() {
-        return document.querySelector(".question-text");
-      },
-      get feedbackText() {
-        return document.querySelector(".feedback-text");
-      },
-      get wildCardButtons() {
-        return document.querySelectorAll(".wildcard-button");
-      },
-      get callFriendBtn() {
-        return document.querySelector(".call-friend");
-      },
-      get eliminateHalfBtn() {
-        return document.querySelector(".eliminate-half");
-      },
-      get changeQuestionBtn() {
-        return document.querySelector(".change-question");
-      },
-      get progressBox() {
-        // Not using "this"... bad smell?
-        return document.querySelector(`.progress-box-${game.round}`);
-      },
-    },
-
-    get nodes() {
-      return this._nodes;
-    },
-  };
-
+  const game = createGame(debug);
+  const superContainer = buildPage(game);
+  const root = document.querySelector(".root");
+  root.appendChild(superContainer);
   await advanceRound(game);
 }
 
@@ -259,6 +16,9 @@ async function advanceRound(game) {
 
   game.nodes.questionText.innerText = question.description;
   game.nodes.feedbackText.innerText = "";
+
+  // LOREM IPSUM TO DEBUG FEEDBACK TEXT
+  // game.nodes.feedbackText.innerText = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.";
 
   // Each wildcard requires a different set of instructions
   resetWildcards(question, game);
@@ -340,6 +100,7 @@ function resetWildcards(question, game) {
     "click",
     (e) => {
       e.target.disabled = true;
+      e.target.classList.add("wildcard-button-inactive"); // TODO HARDCODE FIX
       const answersCopy = { ...question.answers };
       delete answersCopy[question.correctAnswer];
       delete answersCopy[
@@ -368,6 +129,7 @@ function resetWildcards(question, game) {
     "click",
     (e) => {
       e.target.disabled = true;
+      e.target.classList.add("wildcard-button-inactive"); // TODO HARDCODE FIX
       const friendIsCorrect =
         Math.random() > (currentQuestionState.usedEliminateHalf ? 0.1 : 0.3);
 
@@ -391,6 +153,7 @@ function resetWildcards(question, game) {
     (e) => {
       // game.pause() must be called after disabling the button
       e.target.disabled = true;
+      e.target.classList.add("wildcard-button-inactive"); // TODO HARDCODE FIX
       game.pause();
       setTimeout(async () => {
         game.decreaseRound(); // Round "repeats" because of wildcard
@@ -423,21 +186,6 @@ const getQuestion = (function () {
       // TODO: WILL THIS WORK?
       console.warn("Network Error, Fetching Again.");
       return await getQuestion(game);
-      // const mockData = {
-      //   _id: "764833b63g55044199542d84",
-      //   description: "¿Cuál es la capital del Perú?",
-      //   answers: {
-      //     a: "Iquitos",
-      //     b: "Lima",
-      //     c: "Cusco",
-      //     d: "Arequipa",
-      //   },
-      //   correctAnswer: "b",
-      //   feedback:
-      //     "Esta pregunta es un placeholder que se muestra cuando falla la red.",
-      // };
-      // mockData.shuffleAnswers = shuffleAnswers;
-      // return mockData;
     }
   }
   return getQuestion;
