@@ -1,3 +1,117 @@
+(function buildPage() {
+  const superContainer = document.createElement("div");
+  superContainer.classList.add("super-container");
+  document.querySelector(".root").appendChild(superContainer);
+
+  // GAME CONTAINER
+  const gameContainer = document.createElement("div");
+  gameContainer.classList.add("game-container");
+  superContainer.appendChild(gameContainer);
+  // LEFT BOX
+  const leftBox = document.createElement("div");
+  leftBox.classList.add("left-box");
+  gameContainer.appendChild(leftBox);
+  // RIGHT BOX
+  const rightBox = document.createElement("div");
+  rightBox.classList.add("right-box");
+  gameContainer.appendChild(rightBox);
+
+  // LEFT BOX CONTENTS:
+  // - Question
+  // - Progress Bar
+  // - Wildcard Buttons
+  // - Feedback
+
+  // QUESTION
+  const questionContainer = document.createElement("div");
+  questionContainer.classList.add("question-container");
+  const questionText = document.createElement("p");
+  questionText.classList.add("question-text");
+  questionText.innerText = "¿Cuál es la capital de Perú?";
+  questionContainer.appendChild(questionText);
+  leftBox.appendChild(questionContainer);
+
+  // PROGRESS BAR
+  const progressBar = document.createElement("div");
+  progressBar.classList.add("progress-bar");
+  for (let i = 1; i <= 15; i++) {
+    const progressBox = document.createElement("div");
+    progressBox.classList.add("progress-box");
+    progressBox.classList.add(`progress-box-${i}`);
+    progressBar.appendChild(progressBox);
+  }
+  leftBox.appendChild(progressBar);
+
+  // WILDCARDS
+  const wildcardButtonsContainer = document.createElement("div");
+  wildcardButtonsContainer.classList.add("wildcard-buttons-container");
+  const eliminateHalfButton = document.createElement("button");
+  eliminateHalfButton.classList.add("wildcard-button");
+  eliminateHalfButton.classList.add("eliminate-half");
+  eliminateHalfButton.innerText = "Eliminar la mitad";
+  const callFriendButton = document.createElement("button");
+  callFriendButton.classList.add("wildcard-button");
+  callFriendButton.classList.add("call-friend");
+  callFriendButton.innerText = "Llamar a un amigo";
+  const changeQuestionButton = document.createElement("button");
+  changeQuestionButton.classList.add("wildcard-button");
+  changeQuestionButton.classList.add("change-question");
+  changeQuestionButton.innerText = "Cambiar pregunta";
+  wildcardButtonsContainer.appendChild(eliminateHalfButton);
+  wildcardButtonsContainer.appendChild(callFriendButton);
+  wildcardButtonsContainer.appendChild(changeQuestionButton);
+  leftBox.appendChild(wildcardButtonsContainer);
+
+  // FEEDBACK
+  const feedbackContainer = document.createElement("div");
+  feedbackContainer.classList.add("feedback-container");
+  const feedbackText = document.createElement("p");
+  feedbackText.classList.add("feedback-text");
+  feedbackContainer.appendChild(feedbackText);
+  leftBox.appendChild(feedbackContainer);
+
+  /*
+  RIGHT BOX CONTENTS:
+    - OPTIONS
+  
+    div.options-container
+        div.options option-a
+            div.option-letter-container
+                span.option-letter // <- this one is only for display
+            div.option-text-container
+                span.option-text-a
+  */
+
+  const optionsContainer = document.createElement("div");
+  optionsContainer.classList.add("options-container");
+
+  const optionLetters = ["a", "b", "c", "d"];
+  optionLetters.forEach((character) => {
+    const option = document.createElement("div");
+    option.classList.add("options");
+    option.classList.add(`option-${character}`);
+
+    const optionLetterContainer = document.createElement("div");
+    optionLetterContainer.classList.add("option-letter-container");
+    const optionLetter = document.createElement("span");
+    optionLetter.classList.add("option-letter");
+    optionLetter.innerText = character;
+
+    const optionTextContainer = document.createElement("div");
+    optionTextContainer.classList.add("option-text-container");
+    const optionText = document.createElement("span");
+    optionText.classList.add(`option-text-${character}`);
+
+    optionTextContainer.appendChild(optionText);
+    optionLetterContainer.appendChild(optionLetter);
+    option.appendChild(optionLetterContainer);
+    option.appendChild(optionTextContainer);
+    optionsContainer.appendChild(option);
+  });
+
+  rightBox.appendChild(optionsContainer);
+})();
+
 async function run(debug = false) {
   const game = {
     _round: 0,
