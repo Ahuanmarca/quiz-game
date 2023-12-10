@@ -72,6 +72,7 @@ export function buildPage(game) {
   feedbackContainer.appendChild(feedbackText);
   leftBox.appendChild(feedbackContainer);
 
+
   /*
   RIGHT BOX CONTENTS:
   */

@@ -4,7 +4,7 @@ import { buildPage } from "./src/buildPage.js";
 async function run(debug = false) {
   const game = createGame(debug);
   const superContainer = buildPage(game);
-  const root = document.querySelector(".root");
+  const root = document.querySelector("#root");
   root.appendChild(superContainer);
   await advanceRound(game);
 }
@@ -214,4 +214,4 @@ function shuffleAnswers() {
   this.correctAnswer = letterOfCorrectAnswerInNewPosition;
 }
 
-run(true);
+run();
